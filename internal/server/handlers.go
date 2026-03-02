@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/talgya/clawclubs/internal/auth"
-	"github.com/talgya/clawclubs/internal/models"
+	"github.com/tobyjaguar/clawclubs/internal/auth"
+	"github.com/tobyjaguar/clawclubs/internal/models"
 )
 
 func newID() string {

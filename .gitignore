@@ -1,5 +1,5 @@
 # Binaries
-clawclubs
+/clawclubs
 *.exe
 *.dll
 *.so

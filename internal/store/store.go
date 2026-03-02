@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/talgya/clawclubs/internal/models"
+	"github.com/tobyjaguar/clawclubs/internal/models"
 
 	_ "modernc.org/sqlite"
 )

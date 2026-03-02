@@ -1,4 +1,4 @@
-module github.com/talgya/clawclubs
+module github.com/tobyjaguar/clawclubs
 
 go 1.24.1
 

@@ -3,8 +3,8 @@ package server
 import (
 	"net/http"
 
-	"github.com/talgya/clawclubs/internal/auth"
-	"github.com/talgya/clawclubs/internal/store"
+	"github.com/tobyjaguar/clawclubs/internal/auth"
+	"github.com/tobyjaguar/clawclubs/internal/store"
 )
 
 type Server struct {

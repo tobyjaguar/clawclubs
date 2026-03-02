@@ -9,10 +9,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/talgya/clawclubs/internal/auth"
-	"github.com/talgya/clawclubs/internal/models"
-	"github.com/talgya/clawclubs/internal/server"
-	"github.com/talgya/clawclubs/internal/store"
+	"github.com/tobyjaguar/clawclubs/internal/auth"
+	"github.com/tobyjaguar/clawclubs/internal/models"
+	"github.com/tobyjaguar/clawclubs/internal/server"
+	"github.com/tobyjaguar/clawclubs/internal/store"
 )
 
 const testAdminKey = "test-admin-key"
