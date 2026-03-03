@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/tobyjaguar/clawclubs/internal/auth"
 	"github.com/tobyjaguar/clawclubs/internal/server"
 	"github.com/tobyjaguar/clawclubs/internal/store"
 )
@@ -27,6 +28,7 @@ func main() {
 	}
 	defer st.Close()
 
+	auth.StartNonceCleanup()
 	srv := server.New(st, adminKey)
 
 	log.Printf("ClawClubs listening on %s", *addr)

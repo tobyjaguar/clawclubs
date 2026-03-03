@@ -19,6 +19,7 @@ const testAdminKey = "test-admin-key"
 
 func setup(t *testing.T) *httptest.Server {
 	t.Helper()
+	auth.ResetNonces()
 	st, err := store.New(":memory:")
 	if err != nil {
 		t.Fatalf("store: %v", err)
@@ -203,4 +204,89 @@ func TestAdminAuthRequired(t *testing.T) {
 		t.Fatalf("expected 401, got %d", resp.StatusCode)
 	}
 	resp.Body.Close()
+}
+
+func TestReplayRejection(t *testing.T) {
+	ts := setup(t)
+	defer ts.Close()
+
+	// Setup: create club, invite, enroll agent
+	resp := adminPost(t, ts, "/admin/clubs", map[string]string{
+		"name": "Replay Test Club", "description": "test",
+	})
+	var club models.Club
+	json.NewDecoder(resp.Body).Decode(&club)
+	resp.Body.Close()
+
+	resp = adminPost(t, ts, "/admin/invites", map[string]any{
+		"club_id": club.ID, "max_uses": 5,
+	})
+	var invite models.Invite
+	json.NewDecoder(resp.Body).Decode(&invite)
+	resp.Body.Close()
+
+	pub, priv, _ := ed25519.GenerateKey(nil)
+	agentID := hex.EncodeToString(pub)
+	enrollBody, _ := json.Marshal(map[string]string{
+		"invite_code": invite.Code, "agent_pubkey": agentID, "agent_name": "ReplayAgent",
+	})
+	enrollReq, _ := http.NewRequest("POST", ts.URL+"/clubs/"+club.ID+"/enroll", bytes.NewReader(enrollBody))
+	enrollReq.Header.Set("Content-Type", "application/json")
+	http.DefaultClient.Do(enrollReq)
+
+	// First request should succeed
+	req := signedRequest(t, "GET", ts.URL+"/clubs", priv, nil)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("first request: %v", err)
+	}
+	if resp.StatusCode != 200 {
+		t.Fatalf("first request status: expected 200, got %d", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// Replay the exact same request (same nonce) — should get 401
+	// We need to rebuild the request body reader since it was consumed
+	replayReq, _ := http.NewRequest(req.Method, req.URL.String(), bytes.NewReader(nil))
+	replayReq.Header = req.Header.Clone()
+	resp, err = http.DefaultClient.Do(replayReq)
+	if err != nil {
+		t.Fatalf("replay request: %v", err)
+	}
+	if resp.StatusCode != 401 {
+		t.Fatalf("replay request: expected 401, got %d", resp.StatusCode)
+	}
+	resp.Body.Close()
+}
+
+func TestRateLimiting(t *testing.T) {
+	ts := setup(t)
+	defer ts.Close()
+
+	// Burst enrollment requests from same IP — should hit 429 after burst limit
+	var got429 bool
+	for i := 0; i < 15; i++ {
+		body, _ := json.Marshal(map[string]string{
+			"invite_code": "fake", "agent_pubkey": "fake", "agent_name": "test",
+		})
+		req, _ := http.NewRequest("POST", ts.URL+"/clubs/fakeid/enroll", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("request %d: %v", i, err)
+		}
+		if resp.StatusCode == 429 {
+			retryAfter := resp.Header.Get("Retry-After")
+			if retryAfter != "1" {
+				t.Fatalf("expected Retry-After: 1, got %s", retryAfter)
+			}
+			got429 = true
+			resp.Body.Close()
+			break
+		}
+		resp.Body.Close()
+	}
+	if !got429 {
+		t.Fatal("expected 429 after burst of enrollment requests")
+	}
 }
