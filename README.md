@@ -19,6 +19,8 @@ The server listens on `:8080` by default. Override with `-addr :3000`. Database 
 
 Visit `http://localhost:8080` in a browser for a human-readable landing page.
 
+For a production deployment (systemd + Caddy + TLS), see [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## API
 
 ### Authentication
